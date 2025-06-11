@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Redirect Follower</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2rem; }
+  input[type=text] { width: 80%; padding: 0.5rem; font-size: 1rem; }
+  button { padding: 0.5rem 1rem; font-size: 1rem; margin-left: 0.5rem; }
+  textarea { width: 100%; height: 200px; margin-top: 1rem; font-family: monospace; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h1>Redirect Follower</h1>
+
+<input type="text" id="urlInput" placeholder="Enter initial HTTPS URL" value="https://example.com" />
+<button id="startAuthBtn">Start Redirect</button>
+
+<textarea id="logOutput" readonly></textarea>
+
+<script>
+  const logOutput = document.getElementById('logOutput');
+
+  function log(msg) {
+    logOutput.value += msg + '\n';
+    logOutput.scrollTop = logOutput.scrollHeight;
+  }
+
+  async function followRedirectsAndOpen(startUrl) {
+    let currentUrl = startUrl;
+    const maxRedirects = 10;
+
+    for (let i = 0; i < maxRedirects; i++) {
+      try {
+        log(`Fetching: ${currentUrl}`);
+        const response = await fetch(currentUrl, {
+          method: 'GET',
+          redirect: 'manual',
+        });
+
+        if (response.status >= 300 && response.status < 400) {
+          let location = response.headers.get('location');
+          if (!location) {
+            log(`Redirect without Location header at ${currentUrl}`);
+            return;
+          }
+          location = new URL(location, currentUrl).href;
+          log(`Redirect to: ${location}`);
+
+          if (location.startsWith('https://')) {
+            currentUrl = location;
+            continue;
+          } else if (location.startsWith('http://')) {
+            log(`Opening HTTP URL in new tab: ${location}`);
+            window.open(location, '_blank');
+            return;
+          } else {
+            log(`Unsupported redirect protocol: ${location}`);
+            return;
+          }
+        } else {
+          log(`Final URL reached: ${currentUrl} (status: ${response.status})`);
+          log(`Navigating browser to final URL.`);
+          window.location.href = currentUrl;
+          return;
+        }
+      } catch (err) {
+        log(`Fetch error at ${currentUrl}: ${err.message}`);
+        return;
+      }
+    }
+
+    log(`Max redirects (${maxRedirects}) reached without reaching final URL.`);
+  }
+
+  document.getElementById('startAuthBtn').addEventListener('click', () => {
+    logOutput.value = ''; // Clear previous logs
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) {
+      alert('Please enter a URL.');
+      return;
+    }
+    try {
+      new URL(url); // Validate URL format
+    } catch {
+      alert('Invalid URL format.');
+      return;
+    }
+    followRedirectsAndOpen(url);
+  });
+</script>
+
+</body>
+</html>
