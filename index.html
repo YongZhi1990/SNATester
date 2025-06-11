@@ -33,7 +33,7 @@
       log(`Fetching: ${url}`);
       const response = await fetch(url, {
         method: 'GET',
-        mode: 'cors',
+        mode: 'no-cors',
         redirect: 'follow' // let browser follow redirects
       });
 
