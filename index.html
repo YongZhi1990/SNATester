@@ -42,6 +42,7 @@
         log(`Fetching: ${currentUrl}`);
         const response = await fetch(currentUrl, {
           method: 'GET',
+          mode: 'cors',
           redirect: 'manual',
         });
 
