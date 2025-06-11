@@ -47,3 +47,23 @@
       log(`Fetch error: ${err.message}`);
     }
   }
+
+  document.getElementById('startAuthBtn').addEventListener('click', () => {
+    logOutput.value = ''; // Clear previous logs
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) {
+      alert('Please enter a URL.');
+      return;
+    }
+    try {
+      new URL(url); // Validate input
+    } catch {
+      alert('Invalid URL format.');
+      return;
+    }
+    fetchAndRedirect(url);
+  });
+</script>
+
+</body>
+</html>
