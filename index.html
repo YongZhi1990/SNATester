@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Redirect Follower</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 2rem; }
-  input[type=text] { width: 80%; padding: 0.5rem; font-size: 1rem; }
-  button { padding: 0.5rem 1rem; font-size: 1rem; margin-left: 0.5rem; }
-  textarea { width: 100%; height: 200px; margin-top: 1rem; font-family: monospace; white-space: pre-wrap; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Redirect Follower</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    input[type=text] { width: 80%; padding: 0.5rem; font-size: 1rem; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; margin-left: 0.5rem; }
+    textarea { width: 100%; height: 200px; margin-top: 1rem; font-family: monospace; white-space: pre-wrap; }
+  </style>
 </head>
 <body>
 
 <h1>Redirect Follower</h1>
 
-<input type="text" id="urlInput" placeholder="Enter initial HTTPS URL" value="https://example.com" />
+<input type="text" id="urlInput" placeholder="Enter initial HTTPS URL" />
 <button id="startAuthBtn">Start Redirect</button>
 
 <textarea id="logOutput" readonly></textarea>
@@ -26,6 +26,11 @@
   function log(msg) {
     logOutput.value += msg + '\n';
     logOutput.scrollTop = logOutput.scrollHeight;
+  }
+
+  function getQueryParam(name) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name);
   }
 
   async function followRedirectsAndOpen(startUrl) {
@@ -53,8 +58,10 @@
             currentUrl = location;
             continue;
           } else if (location.startsWith('http://')) {
-            log(`Opening HTTP URL in new tab: ${location}`);
-            window.open(location, '_blank');
+            const encodedRedirect = encodeURIComponent(location);
+            const jumpUrl = `https://snatesting.supporttesting.cc/index.html?${encodedRedirect}`;
+            log(`Redirecting through HTTPS jump page: ${jumpUrl}`);
+            window.open(jumpUrl, '_blank');
             return;
           } else {
             log(`Unsupported redirect protocol: ${location}`);
@@ -74,6 +81,21 @@
 
     log(`Max redirects (${maxRedirects}) reached without reaching final URL.`);
   }
+
+  // Read initial URL from query parameter (if present)
+  window.addEventListener('DOMContentLoaded', () => {
+    const initialUrl = getQueryParam('url');
+    const input = document.getElementById('urlInput');
+    if (initialUrl) {
+      try {
+        const decoded = decodeURIComponent(initialUrl);
+        new URL(decoded); // validate
+        input.value = decoded;
+      } catch {
+        log('Invalid URL in query parameter.');
+      }
+    }
+  });
 
   document.getElementById('startAuthBtn').addEventListener('click', () => {
     logOutput.value = ''; // Clear previous logs
