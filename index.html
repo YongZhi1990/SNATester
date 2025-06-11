@@ -28,92 +28,22 @@
     logOutput.scrollTop = logOutput.scrollHeight;
   }
 
-  function getQueryParam(name) {
-    const params = new URLSearchParams(window.location.search);
-    return params.get(name);
-  }
-
-  async function followRedirectsAndOpen(startUrl) {
-    let currentUrl = startUrl;
-    const maxRedirects = 10;
-
-    for (let i = 0; i < maxRedirects; i++) {
-      try {
-        log(`Fetching: ${currentUrl}`);
-        const response = await fetch(currentUrl, {
-          method: 'GET',
-          mode: 'cors',
-          redirect: 'manual',
-        });
-
-        if (response.status >= 300 && response.status < 400) {
-          let location = response.headers.get('location');
-          if (!location) {
-            log(`Redirect without Location header at ${currentUrl}`);
-            return;
-          }
-          location = new URL(location, currentUrl).href;
-          log(`Redirect to: ${location}`);
-
-          if (location.startsWith('https://')) {
-            currentUrl = location;
-            continue;
-          } else if (location.startsWith('http://')) {
-            const encodedRedirect = encodeURIComponent(location);
-            const jumpUrl = `https://snatesting.supporttesting.cc/index.html?${encodedRedirect}`;
-            log(`Redirecting through HTTPS jump page: ${jumpUrl}`);
-            window.open(jumpUrl, '_blank');
-            return;
-          } else {
-            log(`Unsupported redirect protocol: ${location}`);
-            return;
-          }
-        } else {
-          log(`Final URL reached: ${currentUrl} (status: ${response.status})`);
-          log(`Navigating browser to final URL.`);
-          window.location.href = currentUrl;
-          return;
-        }
-      } catch (err) {
-        log(`Fetch error at ${currentUrl}: ${err.message}`);
-        return;
-      }
-    }
-
-    log(`Max redirects (${maxRedirects}) reached without reaching final URL.`);
-  }
-
-  // Read initial URL from query parameter (if present)
-  window.addEventListener('DOMContentLoaded', () => {
-    const initialUrl = getQueryParam('url');
-    const input = document.getElementById('urlInput');
-    if (initialUrl) {
-      try {
-        const decoded = decodeURIComponent(initialUrl);
-        new URL(decoded); // validate
-        input.value = decoded;
-      } catch {
-        log('Invalid URL in query parameter.');
-      }
-    }
-  });
-
-  document.getElementById('startAuthBtn').addEventListener('click', () => {
-    logOutput.value = ''; // Clear previous logs
-    const url = document.getElementById('urlInput').value.trim();
-    if (!url) {
-      alert('Please enter a URL.');
-      return;
-    }
+  async function fetchAndRedirect(url) {
     try {
-      new URL(url); // Validate URL format
-    } catch {
-      alert('Invalid URL format.');
-      return;
-    }
-    followRedirectsAndOpen(url);
-  });
-</script>
+      log(`Fetching: ${url}`);
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        redirect: 'follow' // let browser follow redirects
+      });
 
-</body>
-</html>
+      if (response.ok) {
+        log(`Request successful (status: ${response.status}). Redirecting...`);
+        window.location.href = response.url; // Go to final URL
+      } else {
+        log(`Request failed (status: ${response.status}). Not redirecting.`);
+      }
+    } catch (err) {
+      log(`Fetch error: ${err.message}`);
+    }
+  }
